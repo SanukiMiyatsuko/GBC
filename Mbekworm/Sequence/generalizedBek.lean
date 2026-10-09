@@ -1,6 +1,7 @@
-instance (A : Type) [LE A] [Std.IsLinearOrder A]
-  [DecidableRel (fun a b : A => a ≤ b)] : Min A where
-  min a b := if a ≤ b then a else b
+import Mbekworm.Sequence.order
+
+instance (A : Type) [LT A] [DecidableLT A] : Min A where
+  min a b := if a < b then a else b
 
 def splitOn (A : Type) [DecidableEq A] (a : A) : List A → List (List A)
 | [] => [[]]
@@ -29,37 +30,33 @@ inductive NFClosed (A : Type) [DecidableEq A] [Min A]
   NFClosed A P xs
 
 def NF (A : Type)
-  [LT A] [LE A]
-  [Std.IsLinearOrder A] [Std.LawfulOrderLT A]
-  [DecidableEq A] [DecidableLT A] [DecidableLE A]
+  [LT A] [strict_linear_order A]
+  [DecidableEq A] [DecidableLT A]
   (n : Nat) (xs : List A) : Prop :=
   match n with
-  | 0 => xs.Pairwise (fun x y => y ≤ x)
+  | 0 => xs.Pairwise (fun x y => y < x ∨ y = x)
   | m + 1 =>
     NFClosed A (fun ys => NF (List A) m ys) xs
 
 def NFAt (A : Type)
-  [LT A] [LE A]
-  [Std.IsLinearOrder A] [Std.LawfulOrderLT A]
-  [DecidableEq A] [DecidableLT A] [DecidableLE A]
+  [LT A] [strict_linear_order A]
+  [DecidableEq A] [DecidableLT A]
   (depth : Nat) :
   (k : Nat) → List (IterList A k) → Prop
   | 0, xs => NF A depth xs
   | k + 1, xs => NFAt (List A) depth k xs
 
 def NF_k (A : Type)
-  [LT A] [LE A]
-  [Std.IsLinearOrder A] [Std.LawfulOrderLT A]
-  [DecidableEq A] [DecidableLT A] [DecidableLE A]
+  [LT A] [strict_linear_order A]
+  [DecidableEq A] [DecidableLT A]
   (n k : Nat) (_hk : 1 ≤ k ∧ k ≤ n)
   (xs : List (IterList A (k - 1))) : Prop :=
   NFAt A (n - k + 1) (k - 1) xs
 
 def generalizedBeklemishevConjecture : Prop :=
   ∀ (A : Type)
-    [LT A] [LE A]
-    [Std.IsLinearOrder A] [Std.LawfulOrderLT A]
-    [DecidableEq A] [DecidableLT A] [DecidableLE A],
+    [LT A] [strict_linear_order A]
+    [DecidableEq A] [DecidableLT A],
     WellFounded (fun x y : A => x < y) →
     ∀ n : Nat,
       WellFounded

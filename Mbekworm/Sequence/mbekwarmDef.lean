@@ -39,6 +39,8 @@ theorem parent_mem_parent_cand
   (list : List Nat) (m p : Nat)
   (hp : parent list m = some p) :
   p ∈ parent_cand list m := by
+  letI : Std.MaxEqOr Nat :=
+    ⟨by intro a b; omega⟩
   apply List.max?_mem
   simpa only [parent] using hp
 
@@ -131,6 +133,8 @@ theorem uncle_mem_parent_cand
   (list : List Nat) (x m u : Nat)
   (hu : uncle list x m = some u) :
   u ∈ parent_cand list m := by
+  letI : Std.MinEqOr Nat :=
+    ⟨by intro a b; omega⟩
   have hmem : u ∈ (parent_cand list m).filter (fun i => x < i) := by
     apply List.min?_mem
     simpa only [uncle] using hu
