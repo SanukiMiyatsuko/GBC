@@ -2,13 +2,13 @@ import Mbekworm.Sequence.SemCofinal
 import Mbekworm.Sequence.OTWellFounded
 
 /-!
-# The order isomorphism `OT M ≅ {NF1 below the bound}` for every `M`
+# The order isomorphism `Mbek M ≅ Rank1 M` for every `M`
 
-For `M ≥ 1` the translation is `trM M xs = o M (xs.map ofNat)`; it is strictly
-monotone and normal-form valued (`Sem.facts`), adds `1` when a `0` is appended
-(`succLast`), its expansions are cofinal (`cofW`), and the starting points
-`[k]` climb to `φ_{M-1}(0, 0) = T.phi000 (M - 1)` (the fixed-point limit `fl`).
-For `M = 0` the translation `translation0` is used.
+The translation `trM M xs = o M (xs.map ofNat)` is strictly monotone and normal-form
+valued (`Sem.facts`), adds `1` when a `0` is appended (`succLast`), its expansions
+are cofinal (`cofW`), and the starting points `[k]` climb to `bound M` (`ψ₀(ω)` for
+`M = 0`, and `φ_{M-1}(0, 0)` via the fixed-point limit `fl` for `M > 0`).
+`Translation.toIso` then gives `MbekRank1.Conjecture`.
 -/
 
 open T GenBek Mbek
@@ -32,8 +32,14 @@ theorem goodW_ofNat {M : Nat} {s : List Nat} (h : NF Nat M s) : GoodW M (s.map T
 theorem goodW_OT {M : Nat} {s : List Nat} (h : isOT M s) : GoodW M (s.map T.ofNat) :=
   goodW_ofNat (isOT_NF M s h)
 
+theorem ofNat_inj {m n : Nat} (h : T.ofNat m = T.ofNat n) : m = n := by
+  rcases nat_lt_total m n with hmn | hnm | rfl
+  · exact absurd (h ▸ ofNat_strict_mono hmn) (lt_irrefl_thm _)
+  · exact absurd (h ▸ ofNat_strict_mono hnm) (lt_irrefl_thm _)
+  · rfl
+
 theorem map_ofNat_lt {s t : List Nat} (h : s < t) : s.map T.ofNat < t.map T.ofNat :=
-  map_lt_map (fun _ _ _ _ hxy => ofNat_strict_mono hxy) (fun _ _ _ _ e => T.ofNat_injective e) h
+  map_lt_map (fun _ _ _ _ hxy => ofNat_strict_mono hxy) (fun _ _ _ _ e => ofNat_inj e) h
 
 theorem trM_lt {M : Nat} {s t : List Nat} (hs : isOT M s) (ht : isOT M t) (h : s < t) :
     trM M s < trM M t :=
@@ -84,7 +90,7 @@ theorem copies_T : ∀ j, T.copies 1 Om j = copies Om j
       show P 1 Om (T.copies 1 Om j) = P 1 Om (copies Om j)
       rw [copies_T j]
 
-theorem boundM_eq (n : Nat) : boundM (n + 1) = Eom (n + 1) one one := by
+theorem bound_succ_eq (n : Nat) : MbekRank1.bound (n + 1) = Eom (n + 1) one one := by
   have hone : one ≠ Z := by intro e; cases e
   cases n with
   | zero =>
@@ -96,7 +102,7 @@ theorem boundM_eq (n : Nat) : boundM (n + 1) = Eom (n + 1) one one := by
         if_neg (Nat.succ_ne_zero n)]
       exact (phi_succ_Z_Z n).symm
 
-theorem boundM_zero : boundM 0 = omegaPow (P 0 one Z) := rfl
+theorem bound_zero_eq : MbekRank1.bound 0 = omegaPow (P 0 one Z) := rfl
 
 theorem ofNat_lt_omega : ∀ k, T.ofNat k < P 0 one Z
   | 0 => Z_lt_P' _ _ _
@@ -108,17 +114,17 @@ theorem rep0_Z : ∀ k, rep0 Z k = T.ofNat k
       show P 0 Z (rep0 Z k) = P 0 Z (T.ofNat k)
       rw [rep0_Z k]
 
-theorem trM_single_lt : ∀ M k, trM M [k] < boundM M
+theorem trM_single_lt : ∀ M k, trM M [k] < MbekRank1.bound M
   | 0, k => by
     show o 0 [T.ofNat k] < _
-    rw [o_single_zero, boundM_zero]
+    rw [o_single_zero, bound_zero_eq]
     exact omegaPow_lt_omegaPow (good_ofNat k) (good_omegaPow good_one) (ofNat_lt_omega k)
   | n + 1, k => by
       show o (n + 1) [T.ofNat k] < _
-      have hb : one < boundM (n + 1) :=
+      have hb : one < MbekRank1.bound (n + 1) :=
         T.Lt.p_mid _ _ _ _ _ (Z_lt_P' _ _ _)
       rw [o_single, ← rep0_Z, E_rep0, logA_Z]
-      rw [boundM_eq] at hb ⊢
+      rw [bound_succ_eq] at hb ⊢
       induction k with
       | zero => exact hb
       | succ k ih =>
@@ -151,16 +157,16 @@ theorem fin_of_lt_omega : ∀ {δ : T}, Good δ → δ < P 0 one Z → ∃ k, δ
       obtain ⟨k, hk⟩ := fin_of_lt_omega hδ.tail (lt_tr (tail_lt_of_desc hδ.desc) hlt)
       exact ⟨k + 1, by rw [hk]; rfl⟩
 
-theorem top_cofinal_M : ∀ M (b : T), T.isNF1 b → b < boundM M → ∃ k, b ≤ trM M [k]
+theorem top_cofinal_M : ∀ M (b : T), T.isNF1 b → b < MbekRank1.bound M → ∃ k, b ≤ trM M [k]
   | 0, b, hb, hlt => by
-    rw [boundM_zero] at hlt
+    rw [bound_zero_eq] at hlt
     have hω : Good (P 0 one Z) := good_omegaPow good_one
     obtain ⟨⟨δ, hδ, hδlt⟩, hbδ⟩ := omegaPow_cont hω (lim_P0 nofun)
       (s := fun y : Below (P 0 one Z) => y.1) (fun y => y.2.1) (cof_below hω) b hb hlt
     obtain ⟨k, rfl⟩ := fin_of_lt_omega hδ hδlt
     exact ⟨k, by show b ≤ o 0 [T.ofNat k]; rw [o_single_zero]; exact hbδ⟩
   | n + 1, b, hb, hlt => by
-      rw [boundM_eq] at hlt
+      rw [bound_succ_eq] at hlt
       have h0 : Eom (n + 1) one Z = Z := Eom_succ_Zarg n one
       obtain ⟨⟨δ, hδ, hδlt⟩, hbδ⟩ := fl n good_one nofun good_Z b hb hlt
       change b ≤ E (n + 1) δ (T.add (Eom (n + 1) one Z) one) at hbδ
@@ -171,15 +177,15 @@ theorem top_cofinal_M : ∀ M (b : T), T.isNF1 b → b < boundM M → ∃ k, b �
       rw [o_single]
       exact hbδ
 
-theorem trM_lt_bound (M : Nat) {s : List Nat} (h : isOT M s) : trM M s < boundM M := by
+theorem trM_lt_bound (M : Nat) {s : List Nat} (h : isOT M s) : trM M s < MbekRank1.bound M := by
   induction h with
   | base k => exact trM_single_lt M k
   | step s hs m ih => exact lt_of_le_of_lt' (trM_expand_le hs m) ih
 
 /-! ### The translation -/
 
-/-- **The translation of `OT M`** into normal forms below `boundM M`. -/
-def translation (M : Nat) : Translation M (boundM M) where
+/-- **The translation of `OT M`** into normal forms below `MbekRank1.bound M`. -/
+def translation (M : Nat) : Translation M (MbekRank1.bound M) where
   tr := trM M
   tr_nil := o_nil _
   tr_isNF1 _ hs := (o_good (goodW_OT hs)).nf
@@ -206,28 +212,13 @@ def translation (M : Nat) : Translation M (boundM M) where
 
 end Sem
 
-namespace Mbek
+namespace MbekRank1
 
-/-- The bound of `OT M`: `ψ₀(ω) = ω^ω` for `M = 0`, and `φ_{M-1}(0, 0)` for `M > 0`. -/
-def boundT (M : Nat) : T :=
-  if M = 0 then P 0 (P 0 (P 0 Z Z) Z) Z
-  else P 0 (P 1 (T.mul (P 1 (P 1 Z Z) Z) (T.ofNat (M - 1))) Z) Z
+/-- **The order isomorphism** between `Mbek M` (ordered lexicographically) and the
+rank-one normal forms below `bound M`, for every `M`. -/
+def iso (M : Nat) : MbekRank1Iso M := (Sem.translation M).toIso
 
-theorem boundT_eq : ∀ M, boundT M = Sem.boundM M
-  | 0 => rfl
-  | n + 1 => by
-      unfold boundT
-      rw [if_neg (Nat.succ_ne_zero n), Nat.add_sub_cancel]
-      rfl
+/-- The conjecture of `MbekRank1.Basic` holds. -/
+theorem conjecture : Conjecture := fun M => ⟨iso M⟩
 
-/-- **The order isomorphism** between `OT M` (ordered lexicographically) and the
-rank-one normal forms below `boundT M`. -/
-def OT_iso (M : Nat) : StrictOrderIso (OT M) (NF1Below (boundT M)) :=
-  boundT_eq M ▸ (Sem.translation M).toIso
-
-/-- For every `M`, `OT M` is order-isomorphic to the normal forms below `boundT M`. -/
-theorem OT_order_iso (M : Nat) : Nonempty (StrictOrderIso (OT M) (NF1Below (boundT M))) :=
-  ⟨OT_iso M⟩
-
-end Mbek
-
+end MbekRank1

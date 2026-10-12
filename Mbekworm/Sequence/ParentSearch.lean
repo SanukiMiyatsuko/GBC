@@ -39,6 +39,16 @@ theorem lastIdx_lt (p : Nat → Bool) : ∀ n i, lastIdx p n = some i → i < n
       · cases h; exact Nat.lt_succ_self n
       · exact Nat.lt_succ_of_lt (lastIdx_lt p n i h)
 
+theorem max?_append_singleton (xs : List Nat) (a b : Nat)
+    (h : xs.max? = some a) : (xs ++ [b]).max? = some (max a b) := by
+  cases xs with
+  | nil => cases h
+  | cons x xs =>
+      injection h with h
+      change some (List.foldl max x (xs ++ [b])) = some (max a b)
+      rw [List.foldl_append]
+      simp [h]
+
 theorem max?_filter_range (p : Nat → Bool) : ∀ n,
     ((List.range n).filter p).max? = lastIdx p n
   | 0 => rfl
@@ -52,7 +62,7 @@ theorem max?_filter_range (p : Nat → Bool) : ∀ n,
             rw [List.max?_eq_none_iff] at h
             rw [h]; rfl
         | some a =>
-            rw [List.max?_append_singleton_nat _ a n h]
+            rw [max?_append_singleton _ a n h]
             have ha : a < n := by
               rw [max?_filter_range p n] at h
               exact lastIdx_lt p n a h

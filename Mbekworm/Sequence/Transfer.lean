@@ -1,4 +1,4 @@
-import Mbekworm.Sequence.mvekwarmIso
+import Mbekworm.MbekRank1.Basic
 import Mbekworm.Sequence.NormalForm
 
 /-!
@@ -58,18 +58,6 @@ theorem isOT_init {M : Nat} {s : List Nat} (h : isOT M (s ++ [0])) : isOT M s :=
 /-! ### Rank-one facts -/
 
 theorem T.not_lt_Z (b : T) : ¬ b < Z := fun h => lt_Z_inv h
-
-/-- The elements of `OT M`, ordered lexicographically. -/
-def OT (M : Nat) := {xs : List Nat // isOT M xs}
-
-instance (M : Nat) : LT (OT M) where
-  lt a b := a.val < b.val
-
-/-- Rank-one normal forms below `bound`. -/
-def NF1Below (bound : T) := {a : T.NF1 // a.val < bound}
-
-instance (bound : T) : LT (NF1Below bound) where
-  lt a b := a.val.val < b.val.val
 
 /-! ### A choice-free search -/
 
@@ -230,24 +218,25 @@ theorem surj (b : T) (hb : T.isNF1 b) (hbound : b < bound) : ∃ s, isOT M s ∧
   · exact ⟨[k], isOT.base k, rfl⟩
 
 /-- The preimage of a normal form below `bound`, found by search. -/
-def preimage (b : NF1Below bound) :
-    {s : List Nat // isOT M s ∧ D.tr s = b.val.val} :=
-  have hN : ∃ N, ∃ c, c ∈ cand N ∧ D.tr (decodeOT M c) = b.val.val := by
-    obtain ⟨s, hs, e⟩ := D.surj b.val.val b.val.property b.property
+def preimage (b : {t : T // T.isNF1 t ∧ t < bound}) :
+    {s : List Nat // isOT M s ∧ D.tr s = b.1} :=
+  have hN : ∃ N, ∃ c, c ∈ cand N ∧ D.tr (decodeOT M c) = b.1 := by
+    obtain ⟨s, hs, e⟩ := D.surj b.1 b.2.1 b.2.2
     obtain ⟨c, hc⟩ := decodeOT_surj M hs
     exact ⟨_, c, mem_cand c, by rw [hc, e]⟩
   let N := findNat _ hN
-  let c := findIn (fun c => D.tr (decodeOT M c) = b.val.val) (cand N.1) N.2
+  let c := findIn (fun c => D.tr (decodeOT M c) = b.1) (cand N.1) N.2
   ⟨decodeOT M c.1, isOT_decodeOT M c.1, c.2.2⟩
 
 /-- **The order isomorphism** `OT M ≅ {NF1 below bound}`. -/
-def toIso : StrictOrderIso (OT M) (NF1Below bound) where
-  toFun s := ⟨⟨D.tr s.val, D.tr_isNF1 s.val s.property⟩, D.tr_lt_bound s.val s.property⟩
+def toIso : MbekRank1.OrderIso (MbekRank1.Mbek M) {t : T // T.isNF1 t ∧ t < bound}
+    (fun a b => a.1 < b.1) (fun a b => a.1 < b.1) where
+  toFun s := ⟨D.tr s.1, D.tr_isNF1 s.1 s.2, D.tr_lt_bound s.1 s.2⟩
   invFun b := ⟨(D.preimage b).val, (D.preimage b).property.1⟩
   left_inv s := Subtype.ext
     (D.tr_inj _ _ (D.preimage _).property.1 s.property (D.preimage _).property.2)
-  right_inv b := Subtype.ext (Subtype.ext (D.preimage b).property.2)
-  lt_iff_lt a b := D.tr_lt_iff a.property b.property
+  right_inv b := Subtype.ext (D.preimage b).property.2
+  map_rel_iff a b := D.tr_lt_iff a.property b.property
 
 end Translation
 

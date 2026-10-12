@@ -166,9 +166,4 @@ decreasing_by
 /-- The translation of a sequence of naturals. -/
 def trM (M : Nat) (xs : List Nat) : T := o M (xs.map T.ofNat)
 
-/-- `T.phi000 n = ψ₀(Ω^(Ω·n)·Ω)` written explicitly. -/
-def boundM : Nat → T
-  | 0 => P 0 (P 0 (P 0 Z Z) Z) Z
-  | M + 1 => P 0 (P 1 (T.mul (P 1 (P 1 Z Z) Z) (T.ofNat M)) Z) Z
-
 end Sem

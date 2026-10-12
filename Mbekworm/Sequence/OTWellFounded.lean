@@ -400,9 +400,9 @@ theorem isOT_NF (M : Nat) (s : List Nat) (h : isOT M s) : NF Nat M s := by
 theorem nat_lt_wf : WellFounded (fun x y : Nat => x < y) := Nat.lt_wfRel.wf
 
 /-- **Well-foundedness**: for every `M`, the lexicographic order on `OT M` is well-founded. -/
-theorem OT_wellFounded (M : Nat) : WellFounded (fun a b : OT M => a.val < b.val) := by
+theorem OT_wellFounded (M : Nat) : WellFounded (fun a b : MbekRank1.Mbek M => a.val < b.val) := by
   have hNF := generalizedBeklemishev Nat nat_lt_wf M
-  exact InvImage.wf (fun a : OT M => (⟨a.val, isOT_NF M a.val a.property⟩ :
+  exact InvImage.wf (fun a : MbekRank1.Mbek M => (⟨a.val, isOT_NF M a.val a.property⟩ :
     {xs : List Nat // NF Nat M xs})) hNF
 
 end Mbek
